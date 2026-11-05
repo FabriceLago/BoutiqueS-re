@@ -1,6 +1,6 @@
 {
   "name": "Score de sécurité BoutiqueSûre",
-  "description": "Diagnostic passif de sécurité pour boutiques WooCommerce avec bulletin de santé A à F et recommandations concrètes.",
+  "description": "Diagnostic passif de sécurité pour boutiques en ligne et sites e-commerce avec bulletin de santé A à F et recommandations concrètes.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

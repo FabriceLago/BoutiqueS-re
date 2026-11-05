@@ -56,8 +56,8 @@ const STEPS: StepItem[] = [
   },
   {
     id: 4,
-    label: 'Détection passive de la version WooCommerce',
-    subtext: 'Recherche des balises meta publiques pour évaluer le niveau d\'exposition aux robots.',
+    label: 'Détection passive des technologies e-commerce et CMS',
+    subtext: 'Recherche des balises meta publiques et empreintes logicielles pour évaluer le niveau d\'exposition aux robots.',
     durationMs: 1000,
   },
 ];
@@ -203,39 +203,63 @@ export function WaitingMockup({
       {/* Contenu central de l'écran d'attente */}
       <main className="flex-1 max-w-2xl mx-auto px-4 sm:px-6 py-12 w-full flex flex-col items-center justify-center text-center">
         
-        {/* Radar / Pulsation animée */}
-        <div className="relative mb-8">
-          <div className="absolute inset-0 rounded-full bg-emerald-400/20 animate-ping opacity-75"></div>
-          <div className="relative w-24 h-24 rounded-full bg-slate-900 border-2 border-emerald-400/40 flex items-center justify-center shadow-xl shadow-emerald-500/10">
+        {/* Radar Scanner Cybernétique Animé */}
+        <div className="relative mb-8 flex items-center justify-center">
+          {/* Cercles concentriques & Ondes radar */}
+          <div className="absolute w-36 h-36 rounded-full border border-emerald-500/15 animate-ripple-ring pointer-events-none"></div>
+          <div className="absolute w-28 h-28 rounded-full border border-emerald-500/25 pointer-events-none"></div>
+          
+          <div className="relative w-24 h-24 rounded-full bg-slate-900 border-2 border-emerald-400/40 flex items-center justify-center shadow-xl shadow-emerald-500/10 overflow-hidden">
+            {/* Faisceau rotatif radar */}
+            {!isCompleted && (
+              <div 
+                className="absolute inset-0 rounded-full animate-radar-sweep pointer-events-none"
+                style={{
+                  background: 'conic-gradient(from 0deg, transparent 0deg, transparent 270deg, rgba(74, 222, 128, 0.35) 360deg)'
+                }}
+              />
+            )}
+
+            {/* Viseur central */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+              <div className="w-full h-[1px] bg-emerald-400"></div>
+              <div className="h-full w-[1px] bg-emerald-400 absolute"></div>
+            </div>
+
             {isCompleted ? (
-              <CheckCircle2 className="w-12 h-12 text-[#4ADE80] animate-bounce" />
+              <CheckCircle2 className="w-12 h-12 text-[#4ADE80] animate-scale-in z-10" />
             ) : (
-              <Loader2 className="w-10 h-10 text-[#4ADE80] animate-spin" />
+              <div className="relative z-10 flex flex-col items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-[#4ADE80] animate-pulse-subtle" />
+              </div>
             )}
           </div>
         </div>
 
         {/* Titre & Domaine analysé */}
-        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight animate-fade-slide-up">
           {isCompleted ? 'Analyse terminée avec succès !' : 'Analyse passive de votre boutique...'}
         </h1>
-        <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-emerald-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-900 border border-slate-800 text-xs font-mono text-emerald-400 shadow-sm">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           <span>{storeUrl}</span>
         </div>
 
         {/* Barre de progression avec pourcentage */}
-        <div className="w-full mt-8 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <div className="w-full mt-8 bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl card-hover-elevate">
           <div className="flex items-center justify-between text-xs font-bold mb-2">
             <span className="text-slate-300">Progression du diagnostic</span>
-            <span className="text-[#4ADE80] font-mono">{progress}%</span>
+            <span className="text-[#4ADE80] font-mono tabular-nums">{progress}%</span>
           </div>
 
-          <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800">
+          <div className="w-full h-3 bg-slate-950 rounded-full overflow-hidden p-0.5 border border-slate-800 relative">
             <div 
-              className="h-full bg-gradient-to-r from-[#0E6B3A] via-[#4ADE80] to-emerald-300 rounded-full transition-all duration-700 ease-out"
+              className="h-full bg-gradient-to-r from-[#0E6B3A] via-[#4ADE80] to-emerald-300 rounded-full transition-all duration-700 ease-out relative overflow-hidden"
               style={{ width: `${progress}%` }}
-            ></div>
+            >
+              {/* Reflet de brillance animé */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-full h-full -skew-x-12 animate-[shimmer-sweep_2s_infinite]"></div>
+            </div>
           </div>
 
           {/* Liste ordonnée des étapes passives avec état d'avancement */}

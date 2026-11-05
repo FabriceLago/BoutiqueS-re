@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { REMEDIATION_SNIPPETS } from './RemediationDrawer.tsx';
 
 describe('BulletinMockup - Fonctions de partage social', () => {
   beforeEach(() => {
@@ -65,3 +66,62 @@ describe('BulletinMockup - Fonctions de partage social', () => {
     expect(mockWriteText).toHaveBeenCalledTimes(1);
   });
 });
+
+import { OFFICIAL_GRADE_SCALE } from './BulletinMockup.tsx';
+
+describe('BulletinMockup - Barème officiel des Notes A à F et Tooltips explicatifs', () => {
+  it('définit les 6 notes officielles A, B, C, D, E, F avec leurs seuils de score respectifs', () => {
+    expect(OFFICIAL_GRADE_SCALE).toHaveLength(6);
+    const grades = OFFICIAL_GRADE_SCALE.map(item => item.grade);
+    expect(grades).toEqual(['A', 'B', 'C', 'D', 'E', 'F']);
+  });
+
+  it('fournit une infobulle complète (titre, contenu technique, impact commerçant) pour chaque note', () => {
+    OFFICIAL_GRADE_SCALE.forEach((scaleItem) => {
+      expect(scaleItem.tooltipTitle).toBeTruthy();
+      expect(scaleItem.tooltipTitle).toContain(scaleItem.grade);
+      expect(scaleItem.tooltipContent.length).toBeGreaterThan(30);
+      expect(scaleItem.tooltipImpact.length).toBeGreaterThan(20);
+      expect(scaleItem.technicalCriteriaSummary).toBeTruthy();
+      expect(scaleItem.recommendedAction).toBeTruthy();
+    });
+  });
+
+  it('décrit précisément les exigences techniques pour la Note A (Excellente sécurité passive)', () => {
+    const gradeA = OFFICIAL_GRADE_SCALE.find(item => item.grade === 'A');
+    expect(gradeA).toBeDefined();
+    expect(gradeA?.scoreRange).toBe('90 – 100 pts');
+    expect(gradeA?.tooltipContent).toContain('SSL');
+    expect(gradeA?.tooltipContent).toContain('HSTS');
+    expect(gradeA?.tooltipContent).toContain('CSP');
+    expect(gradeA?.tooltipContent).toContain('X-Frame-Options');
+    expect(gradeA?.tooltipImpact).toContain('PCI-DSS');
+  });
+
+  it('décrit précisément les failles et le risque d\'exposition pour les notes intermédiaires et critiques (C, E, F)', () => {
+    const gradeC = OFFICIAL_GRADE_SCALE.find(item => item.grade === 'C');
+    expect(gradeC?.scoreRange).toBe('60 – 74 pts');
+    expect(gradeC?.tooltipContent).toContain('absence');
+    expect(gradeC?.tooltipImpact).toContain('robots');
+
+    const gradeE = OFFICIAL_GRADE_SCALE.find(item => item.grade === 'E');
+    expect(gradeE?.scoreRange).toBe('25 – 44 pts');
+    expect(gradeE?.tooltipContent).toContain('SSL');
+    expect(gradeE?.tooltipImpact).toContain('Stripe');
+
+    const gradeF = OFFICIAL_GRADE_SCALE.find(item => item.grade === 'F');
+    expect(gradeF?.scoreRange).toBe('< 25 pts');
+    expect(gradeF?.tooltipContent).toContain('chiffrement HTTPS');
+  });
+
+  it('associe des snippets de remédiation technique vérifiés aux critères de sécurité majeurs', () => {
+    const supportedCriteria = ['ssl-redirect', 'header-hsts', 'header-xframe', 'header-csp', 'header-content-type', 'header-referrer'];
+    for (const critId of supportedCriteria) {
+      expect(REMEDIATION_SNIPPETS[critId]).toBeDefined();
+      expect(REMEDIATION_SNIPPETS[critId].snippets.apache).toBeTruthy();
+      expect(REMEDIATION_SNIPPETS[critId].snippets.nginx).toBeTruthy();
+      expect(REMEDIATION_SNIPPETS[critId].snippets.wordpress).toBeTruthy();
+    }
+  });
+});
+

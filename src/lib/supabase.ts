@@ -292,3 +292,72 @@ export async function fetchRecentScanLogs(
     return { success: false, data: [], error: err.message || 'Erreur lors de la récupération des logs.' };
   }
 }
+
+/**
+ * Récupère la liste des prospects WooCommerce
+ */
+export async function fetchProspects(
+  limit: number = 50
+): Promise<{ success: boolean; data: ProspectRow[]; error?: string }> {
+  if (!supabase) {
+    return {
+      success: false,
+      data: [],
+      error: 'Supabase non configuré.'
+    };
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('prospects')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      return { success: false, data: [], error: error.message };
+    }
+
+    return { success: true, data: (data as ProspectRow[]) || [] };
+  } catch (err: any) {
+    return { success: false, data: [], error: err.message || 'Erreur lors de la récupération des prospects.' };
+  }
+}
+
+/**
+ * Met à jour le statut commercial ou les notes d'un prospect
+ */
+export async function updateProspectStatus(
+  id: string,
+  commercialStatus: 'nouveau' | 'contacte' | 'devis_envoye' | 'converti' | 'sans_suite',
+  notes?: string
+): Promise<{ success: boolean; data?: ProspectRow; error?: string }> {
+  if (!supabase) {
+    return {
+      success: false,
+      error: 'Supabase non configuré.'
+    };
+  }
+
+  try {
+    const updatePayload: any = { commercial_status: commercialStatus };
+    if (notes !== undefined) {
+      updatePayload.notes = notes;
+    }
+
+    const { data, error } = await supabase
+      .from('prospects')
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data as ProspectRow };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Erreur lors de la mise à jour du prospect.' };
+  }
+}

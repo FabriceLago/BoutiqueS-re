@@ -108,6 +108,78 @@ export function sanitizeStoreUrl(raw: string): SanitizeUrlResult {
   };
 }
 
+/**
+ * Détecte si la saisie correspond à un nom d'enseigne/boutique plutôt qu'à une URL pure
+ * Exemples : "Maison du Thé", "L'Atelier Cuir", "Boutique Bio", "Chocolats de Paris"
+ */
+export function isStoreName(input: string): boolean {
+  if (!input || typeof input !== 'string') return false;
+  const trimmed = input.trim();
+  if (!trimmed) return false;
+  
+  // Si commence déjà par http:// ou https://, c'est une URL
+  if (/^https?:\/\//i.test(trimmed)) return false;
+
+  // Si contient des espaces internes, c'est un nom d'enseigne
+  if (/\s/.test(trimmed)) return true;
+
+  // Si contient des apostrophes ou caractères typiques d'un nom commercial
+  if (/['’]/.test(trimmed)) return true;
+
+  // Si ne contient aucun point et a au moins 2 caractères alphabétiques
+  if (!trimmed.includes('.') && /[a-zA-ZÀ-ÿ]{2,}/.test(trimmed)) return true;
+
+  return false;
+}
+
+/**
+ * Convertit un nom de boutique en un nom de domaine ou URL valide pour l'analyse passive
+ * @param storeName Le nom brut saisi (ex : "L'Atelier Cuir & Bois", "Chocolaterie de Paris", "Ma Boutique")
+ * @param tld Extension de domaine par défaut ('fr', 'com', 'be', 'shop', 'eu'...)
+ * @returns L'URL normalisée prête pour l'audit passif (ex : "https://l-atelier-cuir-bois.fr")
+ */
+export function formatStoreNameToDomain(storeName: string, tld: string = 'fr'): string {
+  if (!storeName || typeof storeName !== 'string') return '';
+  const trimmed = storeName.trim();
+  if (!trimmed) return '';
+
+  // Si c'est déjà une URL complète avec protocole
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  // Si c'est déjà un nom de domaine avec extension valide (ex: boutique.fr, shop.com)
+  if (/^[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(:\d+)?(\/.*)?$/i.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+
+  // Nettoyage et slugification du nom de boutique
+  // 1. Décomposition des accents (NFD) et suppression des diacritiques
+  let slug = trimmed
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  // 2. Remplacement des apostrophes et esperluettes par des tirets
+  slug = slug
+    .replace(/['’]/g, '-')
+    .replace(/&+/g, '-et-')
+    .replace(/[^a-z0-9.-]/g, '-') // remplace tout caractère non alphanumérique par tiret
+    .replace(/-+/g, '-')          // supprime les tirets multiples consécutifs
+    .replace(/^-+|-+$/g, '');     // supprime les tirets de début et de fin
+
+  if (!slug) return '';
+
+  // Si le slug a déjà une extension valide à la fin (ex: slug.fr)
+  if (/\.[a-z]{2,}$/i.test(slug)) {
+    return `https://${slug}`;
+  }
+
+  // Ajout de l'extension TLD choisie
+  const cleanTld = tld.replace(/^\./, '').toLowerCase() || 'fr';
+  return `https://${slug}.${cleanTld}`;
+}
+
 export const DEMO_PRESETS = [
   {
     id: 'demo-mode',
@@ -138,11 +210,14 @@ export const DEMO_PRESETS = [
 interface HomeMockupProps {
   onStartAudit: (url: string, email: string) => void;
   isMobileView?: boolean;
+  onNavigateToScreen?: (screen: 'home' | 'waiting' | 'bulletin' | 'email' | 'audit_logs' | 'privacy') => void;
 }
 
-export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupProps) {
-  const [storeUrl, setStoreUrl] = useState('https://maboutique-mode.fr');
-  const [email, setEmail] = useState('contact@maboutique-mode.fr');
+export function HomeMockup({ onStartAudit, isMobileView = false, onNavigateToScreen }: HomeMockupProps) {
+  // Champs initialisés vides (aucune donnée fictive pré-remplie)
+  const [storeUrl, setStoreUrl] = useState('');
+  const [email, setEmail] = useState('');
+  const [selectedTld, setSelectedTld] = useState<'fr' | 'com' | 'be' | 'shop' | 'eu'>('fr');
   const [isManagerChecked, setIsManagerChecked] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   
@@ -153,14 +228,14 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
   const [urlSanitizedNotice, setUrlSanitizedNotice] = useState<string | null>(null);
   const [pasteSuccess, setPasteSuccess] = useState<boolean>(false);
 
-  // Restauration automatique du brouillon (sessionStorage)
+  // Restauration automatique du brouillon (sessionStorage sans réintroduire les anciennes données fictives)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
         const savedUrl = sessionStorage.getItem('boutiquesure_draft_url');
         const savedEmail = sessionStorage.getItem('boutiquesure_draft_email');
-        if (savedUrl) setStoreUrl(savedUrl);
-        if (savedEmail) setEmail(savedEmail);
+        if (savedUrl && !savedUrl.includes('maboutique-mode.fr')) setStoreUrl(savedUrl);
+        if (savedEmail && !savedEmail.includes('maboutique-mode.fr')) setEmail(savedEmail);
       } catch {}
     }
   }, []);
@@ -186,15 +261,35 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
     return [];
   });
 
-  // Validation temps réel de l'URL
-  const urlValidation = useMemo(() => {
-    if (!storeUrl.trim()) return { valid: false, error: "Veuillez saisir l'adresse de votre boutique." };
-    return validateUrlFormat(storeUrl);
+  // Détection si l'utilisateur saisit un nom de boutique ou une adresse URL
+  const detectedStoreName = useMemo(() => {
+    return isStoreName(storeUrl);
   }, [storeUrl]);
 
+  // Domaine suggéré/généré en direct pour l'analyse
+  const suggestedDomain = useMemo(() => {
+    if (!storeUrl.trim()) return '';
+    return formatStoreNameToDomain(storeUrl, selectedTld);
+  }, [storeUrl, selectedTld]);
+
+  // Validation temps réel : accepte à la fois un nom d'enseigne ou une URL directe
+  const urlValidation = useMemo(() => {
+    if (!storeUrl.trim()) return { valid: false, error: "Veuillez saisir le nom ou l'adresse de votre boutique." };
+    if (detectedStoreName) {
+      const formatted = formatStoreNameToDomain(storeUrl, selectedTld);
+      return validateUrlFormat(formatted);
+    }
+    return validateUrlFormat(storeUrl);
+  }, [storeUrl, detectedStoreName, selectedTld]);
+
   // Indicateurs de la checklist de préparation en direct
-  const isHttps = useMemo(() => storeUrl.toLowerCase().startsWith('https://'), [storeUrl]);
+  const isHttps = useMemo(() => {
+    if (detectedStoreName) return true;
+    return storeUrl.toLowerCase().startsWith('https://');
+  }, [storeUrl, detectedStoreName]);
+
   const hasValidTld = useMemo(() => {
+    if (detectedStoreName) return true;
     try {
       const u = storeUrl.startsWith('http') ? storeUrl : `https://${storeUrl}`;
       const host = new URL(u).hostname;
@@ -202,7 +297,7 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
     } catch {
       return false;
     }
-  }, [storeUrl]);
+  }, [storeUrl, detectedStoreName]);
 
   // Validation temps réel de l'email et suggestion de correction
   const emailValidation = useMemo(() => {
@@ -215,11 +310,15 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
   }, [email]);
 
   const handleUrlChange = (value: string) => {
-    const sanitized = sanitizeStoreUrl(value);
-    setStoreUrl(sanitized.cleanedUrl);
-    if (sanitized.wasModified && sanitized.message) {
-      setUrlSanitizedNotice(sanitized.message);
-      setTimeout(() => setUrlSanitizedNotice(null), 4000);
+    if (/^https?:\/\//i.test(value.trim())) {
+      const sanitized = sanitizeStoreUrl(value);
+      setStoreUrl(sanitized.cleanedUrl);
+      if (sanitized.wasModified && sanitized.message) {
+        setUrlSanitizedNotice(sanitized.message);
+        setTimeout(() => setUrlSanitizedNotice(null), 4000);
+      }
+    } else {
+      setStoreUrl(value);
     }
   };
 
@@ -228,15 +327,19 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
       if (navigator?.clipboard?.readText) {
         const text = await navigator.clipboard.readText();
         if (text) {
-          const sanitized = sanitizeStoreUrl(text);
-          setStoreUrl(sanitized.cleanedUrl);
+          if (/^https?:\/\//i.test(text.trim())) {
+            const sanitized = sanitizeStoreUrl(text);
+            setStoreUrl(sanitized.cleanedUrl);
+            if (sanitized.wasModified && sanitized.message) {
+              setUrlSanitizedNotice(sanitized.message);
+              setTimeout(() => setUrlSanitizedNotice(null), 4000);
+            }
+          } else {
+            setStoreUrl(text.trim());
+          }
           setUrlTouched(true);
           setPasteSuccess(true);
           setTimeout(() => setPasteSuccess(false), 2000);
-          if (sanitized.wasModified && sanitized.message) {
-            setUrlSanitizedNotice(sanitized.message);
-            setTimeout(() => setUrlSanitizedNotice(null), 4000);
-          }
         }
       }
     } catch {
@@ -259,28 +362,32 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
     setEmailTouched(true);
 
     if (!storeUrl.trim()) {
-      setErrorMsg('Veuillez saisir l\'adresse de votre boutique WooCommerce.');
+      setErrorMsg("Veuillez saisir le nom ou l'adresse de votre boutique en ligne.");
       return;
     }
 
-    if (!urlValidation.valid) {
-      setErrorMsg(urlValidation.error || 'Veuillez saisir une adresse web valide.');
+    const targetToAudit = detectedStoreName 
+      ? formatStoreNameToDomain(storeUrl, selectedTld) 
+      : (urlValidation.target?.normalizedUrl || storeUrl);
+
+    const targetCheck = validateUrlFormat(targetToAudit);
+    if (!targetCheck.valid) {
+      setErrorMsg(targetCheck.error || "Veuillez renseigner un nom de boutique ou une adresse web valide.");
       return;
     }
 
     if (!email.trim() || !email.includes('@') || !emailValidation) {
-      setErrorMsg('Veuillez renseigner une adresse email valide pour recevoir le bulletin.');
+      setErrorMsg("Veuillez renseigner une adresse email valide pour recevoir le bulletin.");
       return;
     }
 
     if (!isManagerChecked) {
-      setErrorMsg('Veuillez confirmer que vous êtes le gérant de la boutique ou habilité à agir pour son compte.');
+      setErrorMsg("Veuillez confirmer que vous êtes le gérant de la boutique ou habilité à agir pour son compte.");
       return;
     }
 
     setIsSubmitting(true);
-    // Normaliser l'URL si besoin
-    const normalizedUrl = urlValidation.target?.normalizedUrl || storeUrl;
+    const normalizedUrl = targetCheck.target?.normalizedUrl || targetToAudit;
     
     // Mémoriser dans l'historique local récent
     try {
@@ -319,7 +426,7 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
             </div>
             <div>
               <span className="font-extrabold text-lg tracking-tight text-white block leading-none">BoutiqueSûre</span>
-              <span className="text-[11px] text-slate-400 font-medium">Sécurité & Maintenance WooCommerce</span>
+              <span className="text-[11px] text-slate-400 font-medium">Sécurité & Maintenance E-Commerce</span>
             </div>
           </div>
 
@@ -335,7 +442,7 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
               Nos offres dès 69 €/mois
             </a>
             <span className="text-slate-500">•</span>
-            <a href="#faq-section-woocommerce" className="hover:text-white transition-colors">
+            <a href="#faq-section-ecommerce" className="hover:text-white transition-colors">
               FAQ Sécurité
             </a>
           </div>
@@ -354,7 +461,7 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
         {/* Titre & Sous-titre vulgarisés pour gérants */}
         <div className="text-center max-w-3xl mb-10">
           <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-tight">
-            Quel est le <span className="text-[#4ADE80]">score de sécurité</span> de votre boutique WooCommerce ?
+            Quel est le <span className="text-[#4ADE80]">score de sécurité</span> de votre boutique en ligne ?
           </h1>
           <p className="mt-4 text-base sm:text-lg text-slate-300 leading-relaxed font-normal">
             En <strong>5 secondes</strong>, découvrez votre note de <strong>A à F</strong> et les 3 actions prioritaires
@@ -377,14 +484,14 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
             </span>
           </div>
 
-          {/* Scénarios démo pré-remplis pour test immédiat */}
+          {/* Exemples de démonstration (optionnels) */}
           <div className="mb-5 p-3 rounded-xl bg-slate-950/70 border border-slate-800" data-testid="demo-presets-container">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-slate-300 flex items-center gap-1.5">
                 <Zap className="w-3.5 h-3.5 text-amber-400" />
-                Tester avec un exemple démo :
+                Ou tester rapidement avec un exemple :
               </span>
-              <span className="text-[10px] text-slate-500 font-semibold">Pré-remplissage 1 clic</span>
+              <span className="text-[10px] text-slate-500 font-semibold">Exemples prêts à l'emploi</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               {DEMO_PRESETS.map((preset) => (
@@ -392,7 +499,7 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
                   key={preset.id}
                   type="button"
                   onClick={() => handleSelectPreset(preset)}
-                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700 text-left transition-all cursor-pointer flex flex-col justify-between"
+                  className="px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800/90 border border-slate-800 hover:border-slate-700 text-left transition-all cursor-pointer flex flex-col justify-between card-hover-elevate btn-interactive"
                   title={`Tester avec ${preset.label} (${preset.badge})`}
                 >
                   <span className="text-xs font-bold text-white truncate">{preset.label}</span>
@@ -413,17 +520,17 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
 
           <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             
-            {/* Champ 1 : Adresse URL */}
+            {/* Champ 1 : Nom de la boutique ou Adresse URL */}
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label htmlFor="storeUrl" className="block text-xs font-bold text-slate-200">
-                  Adresse de votre boutique WooCommerce <span className="text-rose-400">*</span>
+                  Nom de votre boutique en ligne ou adresse web <span className="text-rose-400">*</span>
                 </label>
                 <div className="flex items-center gap-2">
                   {urlTouched && urlValidation.valid && (
                     <span className="text-[10px] text-emerald-400 font-bold flex items-center gap-1">
                       <Check className="w-3 h-3 text-emerald-400" />
-                      URL valide
+                      {detectedStoreName ? 'Boutique identifiée' : 'URL valide'}
                     </span>
                   )}
                   {typeof window !== 'undefined' && 'clipboard' in navigator && (
@@ -443,12 +550,12 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
               <div className="relative">
                 <input
                   id="storeUrl"
-                  type="url"
+                  type="text"
                   required
                   value={storeUrl}
                   onChange={(e) => handleUrlChange(e.target.value)}
                   onBlur={() => setUrlTouched(true)}
-                  placeholder="https://votre-boutique.fr"
+                  placeholder="Ex : Ma Boutique Bio ou mon-magasin.fr"
                   className={`w-full min-h-[48px] px-4 pr-10 rounded-xl bg-[#0F1B2D] border text-white placeholder-slate-500 text-sm focus:outline-none transition-all ${
                     urlTouched && !urlValidation.valid
                       ? 'border-rose-500/80 focus:ring-2 focus:ring-rose-500'
@@ -470,6 +577,52 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
                 </div>
               </div>
 
+              {/* Boîte d'assistance intelligente lorsqu'un nom de boutique est saisi */}
+              {detectedStoreName && storeUrl.trim().length >= 2 && (
+                <div className="mt-2.5 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs animate-in fade-in space-y-2" data-testid="store-name-helper">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-1.5 text-emerald-300 font-semibold">
+                      <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span>Enseigne détectée : <strong>{storeUrl.trim()}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-[11px] text-slate-400">Extension :</span>
+                      <div className="flex items-center gap-1 bg-slate-900/80 p-0.5 rounded-lg border border-slate-700/60">
+                        {(['fr', 'com', 'be', 'shop', 'eu'] as const).map(tld => (
+                          <button
+                            key={tld}
+                            type="button"
+                            onClick={() => setSelectedTld(tld)}
+                            className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition-colors cursor-pointer ${
+                              selectedTld === tld 
+                                ? 'bg-emerald-400 text-slate-950 shadow-sm' 
+                                : 'text-slate-400 hover:text-white'
+                            }`}
+                          >
+                            .{tld}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-300 pt-1.5 border-t border-emerald-500/20">
+                    <span className="truncate">
+                      Cible analysée : <code className="text-emerald-400 font-mono font-bold">{suggestedDomain}</code>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStoreUrl(suggestedDomain);
+                        setUrlTouched(true);
+                      }}
+                      className="text-[10px] text-emerald-400 hover:text-emerald-300 font-bold underline ml-2 shrink-0 cursor-pointer"
+                    >
+                      Utiliser cette adresse
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Notification si l'URL a été nettoyée d'une page interne */}
               {urlSanitizedNotice && (
                 <div className="mt-1.5 px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] flex items-center gap-1.5 animate-in fade-in">
@@ -482,11 +635,11 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
               <div className="mt-2 p-2 rounded-lg bg-slate-950/60 border border-slate-800/80 grid grid-cols-3 gap-2 text-[10px]">
                 <div className={`flex items-center gap-1 font-medium ${isHttps ? 'text-emerald-400' : 'text-slate-400'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${isHttps ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
-                  <span>Tunnel HTTPS</span>
+                  <span>{detectedStoreName ? 'Nom identifié' : 'Tunnel HTTPS'}</span>
                 </div>
                 <div className={`flex items-center gap-1 font-medium ${hasValidTld ? 'text-emerald-400' : 'text-slate-400'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${hasValidTld ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
-                  <span>Extension valide</span>
+                  <span>{detectedStoreName ? `Extension .${selectedTld}` : 'Extension valide'}</span>
                 </div>
                 <div className={`flex items-center gap-1 font-medium ${urlValidation.valid ? 'text-emerald-400' : 'text-slate-400'}`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${urlValidation.valid ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
@@ -501,7 +654,7 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
                 </p>
               ) : (
                 <p id="storeUrl-hint" className="mt-1.5 text-[11px] text-slate-400">
-                  Exemple : https://ma-boutique-en-ligne.com (page d'accueil publique uniquement)
+                  Exemple : Ma Boutique Bio (nom de votre enseigne) ou mon-magasin.fr (adresse web)
                 </p>
               )}
             </div>
@@ -695,7 +848,7 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
               <Server className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-xs font-bold text-white">Spécialiste WooCommerce</h3>
+              <h3 className="text-xs font-bold text-white">Spécialiste E-Commerce</h3>
               <p className="text-[11px] text-slate-400 mt-1 leading-relaxed">
                 Conçu pour les e-commerçants belges et français réalisant entre 100k€ et 500k€ de CA sans équipe IT.
               </p>
@@ -717,13 +870,13 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
             <div className="p-6 rounded-2xl bg-slate-900 border border-slate-800 flex flex-col justify-between">
               <div>
                 <div className="text-xs font-bold uppercase tracking-wider text-slate-400">One-Shot</div>
-                <h3 className="text-lg font-bold text-white mt-1">Diagnostic Complet WooCommerce</h3>
+                <h3 className="text-lg font-bold text-white mt-1">Diagnostic Complet Boutique en Ligne</h3>
                 <div className="mt-3 flex items-baseline gap-1">
                   <span className="text-3xl font-black text-white">590 €</span>
                   <span className="text-xs text-slate-400">HTVA</span>
                 </div>
                 <p className="text-xs text-slate-300 mt-3 leading-relaxed">
-                  Audit approfondi avec rapport d'intervention personnalisé, revue des plugins, base de données et recommandations d'un expert WooCommerce dédié.
+                  Audit approfondi avec rapport d'intervention personnalisé, revue des extensions, base de données et recommandations d'un expert e-commerce dédié.
                 </p>
               </div>
               <div className="mt-6 pt-4 border-t border-slate-800">
@@ -763,14 +916,21 @@ export function HomeMockup({ onStartAudit, isMobileView = false }: HomeMockupPro
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-            <span>BoutiqueSûre © 2026 — Maintenance & Sécurité WooCommerce en France et Belgique</span>
+            <span>BoutiqueSûre © 2026 — Maintenance & Sécurité E-Commerce en France et Belgique</span>
           </div>
           <div className="flex items-center gap-6">
             <a href="#tarifs" className="hover:text-emerald-400 transition-colors">Tarifs</a>
             <span className="text-slate-700">•</span>
-            <a href="#faq-section-woocommerce" className="hover:text-emerald-400 transition-colors">FAQ Sécurité</a>
+            <a href="#faq-section-ecommerce" className="hover:text-emerald-400 transition-colors">FAQ Sécurité</a>
             <span className="text-slate-700">•</span>
-            <a href="#confidentialite" className="hover:text-emerald-400 transition-colors">Politique de confidentialité</a>
+            <button 
+              type="button"
+              onClick={() => onNavigateToScreen?.('privacy')}
+              className="hover:text-emerald-400 transition-colors cursor-pointer text-left"
+              data-testid="footer-privacy-btn"
+            >
+              Politique de confidentialité & RGPD
+            </button>
             <span className="text-slate-700">•</span>
             <span>Contact : contact@boutiquesure.fr</span>
           </div>

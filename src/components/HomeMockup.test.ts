@@ -5,7 +5,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isValidEmailFormat, detectEmailTypo, sanitizeStoreUrl, DEMO_PRESETS } from './HomeMockup';
+import { 
+  isValidEmailFormat, 
+  detectEmailTypo, 
+  sanitizeStoreUrl, 
+  DEMO_PRESETS,
+  isStoreName,
+  formatStoreNameToDomain 
+} from './HomeMockup';
 import { validateUrlFormat } from '../lib/scanner';
 
 describe('HomeMockup Front-end Validation (Étape 3)', () => {
@@ -120,6 +127,47 @@ describe('HomeMockup Front-end Validation (Étape 3)', () => {
 
       const decoPreset = DEMO_PRESETS.find(p => p.id === 'demo-deco');
       expect(decoPreset?.badge).toContain('Note E');
+    });
+  });
+
+  describe('Détection et conversion du nom de boutique en ligne (Store Name Support)', () => {
+    it('détecte correctement un nom de boutique commerciale', () => {
+      expect(isStoreName('Ma Boutique Bio')).toBe(true);
+      expect(isStoreName("L'Atelier Cuir")).toBe(true);
+      expect(isStoreName('Chocolats de Paris')).toBe(true);
+      expect(isStoreName('Maison du Thé')).toBe(true);
+      expect(isStoreName('BoutiqueMode')).toBe(true);
+    });
+
+    it('distingue les URLs directes et domaines qualifiés', () => {
+      expect(isStoreName('https://maboutique.fr')).toBe(false);
+      expect(isStoreName('http://boutique-bio.com')).toBe(false);
+      expect(isStoreName('boutique.fr')).toBe(false);
+      expect(isStoreName('')).toBe(false);
+    });
+
+    it('convertit un nom avec espaces et accents en nom de domaine valide', () => {
+      expect(formatStoreNameToDomain('Maison du Thé')).toBe('https://maison-du-the.fr');
+      expect(formatStoreNameToDomain('Ma Boutique Bio')).toBe('https://ma-boutique-bio.fr');
+      expect(formatStoreNameToDomain('Épicerie Fine & Bio')).toBe('https://epicerie-fine-et-bio.fr');
+    });
+
+    it('gère les apostrophes et caractères spéciaux', () => {
+      expect(formatStoreNameToDomain("L'Atelier Cuir")).toBe('https://l-atelier-cuir.fr');
+      expect(formatStoreNameToDomain("D'Art & d'Essai")).toBe('https://d-art-et-d-essai.fr');
+    });
+
+    it('applique une extension TLD personnalisée (.com, .be, .shop, .eu)', () => {
+      expect(formatStoreNameToDomain('Chocolaterie de Bruxelles', 'be')).toBe('https://chocolaterie-de-bruxelles.be');
+      expect(formatStoreNameToDomain('Mode & Tendances', 'com')).toBe('https://mode-et-tendances.com');
+      expect(formatStoreNameToDomain('Concept Store', 'shop')).toBe('https://concept-store.shop');
+      expect(formatStoreNameToDomain('Euro Boutique', 'eu')).toBe('https://euro-boutique.eu');
+    });
+
+    it('préserve les domaines ou URLs déjà complets sans duplication d\'extension', () => {
+      expect(formatStoreNameToDomain('https://maboutique-existante.com')).toBe('https://maboutique-existante.com');
+      expect(formatStoreNameToDomain('maboutique-existante.fr')).toBe('https://maboutique-existante.fr');
+      expect(formatStoreNameToDomain('eshop.co.uk')).toBe('https://eshop.co.uk');
     });
   });
 

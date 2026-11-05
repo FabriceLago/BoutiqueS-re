@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     --color-primary-dark: #0F1B2D;
@@ -10,198 +12,562 @@
 
   body {
     font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    transition: background-color 0.25s ease, color 0.25s ease;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 }
 
 /* ==========================================================================
-   Thème Clair Haute Accessibilité (WCAG AA Compliant)
-   Activé via data-theme="light" ou .theme-light
+   Animations & Micro-Interactions Fluides (Conformes Section 1.G Motion Budget)
+   ========================================================================== */
+
+@keyframes radar-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes pulse-subtle {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+
+@keyframes ripple-ring {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+@keyframes scale-in-pop {
+  0% { transform: scale(0.92); opacity: 0; }
+  70% { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fade-slide-up {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-radar-sweep {
+  animation: radar-sweep 2.8s linear infinite;
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 3s ease-in-out infinite;
+}
+
+.animate-ripple-ring {
+  animation: ripple-ring 2.2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+.animate-fade-slide-up {
+  animation: fade-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Transitions interactives pour cartes et boutons */
+.card-hover-elevate {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.card-hover-elevate:hover {
+  transform: translateY(-2px);
+}
+
+.btn-interactive {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn-interactive:active {
+  transform: scale(0.98);
+}
+
+/* Respect de prefers-reduced-motion pour l'accessibilité */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==========================================================================
+   Thème Clair Haute Visibilité & Contraste Élevé (Élimination du gris terne)
+   Couleurs : Fond Lait Blanc-Grisé (#F8FAFC), Cartes Blanc Pur (#FFFFFF)
+   Typographie : Encre Noire Intense (#0A0F1D / #1E293B) sans gris délavé
+   Accents : Émeraude Professionnel (#047857), Ambre Vif (#B45309), Carmin (#B91C1C)
    ========================================================================== */
 
 [data-theme="light"],
-.theme-light {
+.theme-light,
+html.light {
   color-scheme: light;
-  background-color: #F8FAFC !important;
-  color: #0F172A !important;
+  background-color: #F8FAFC;
+  color: #0A0F1D;
 }
 
-/* Arrière-plans principaux et conteneurs */
+/* --- 1. Canvas et Arrière-plans globaux (Fini les fonds sombres ou gris foncé) --- */
+[data-theme="light"] .theme-root,
+.theme-light .theme-root,
 [data-theme="light"] .bg-\[\#0A101D\],
-[data-theme="light"] .bg-\[\#0F1B2D\],
 .theme-light .bg-\[\#0A101D\],
+[data-theme="light"] .bg-\[\#0F1B2D\],
 .theme-light .bg-\[\#0F1B2D\] {
   background-color: #F8FAFC !important;
+  color: #0A0F1D !important;
 }
 
+/* Barre de navigation supérieure : Blanc Pur Lisse avec liseré net */
+[data-theme="light"] nav[aria-label="Navigation des maquettes"],
+.theme-light nav[aria-label="Navigation des maquettes"],
 [data-theme="light"] .bg-\[\#070D18\],
-[data-theme="light"] .bg-\[\#0B1523\],
-[data-theme="light"] .bg-\[\#0B1523\]\/90,
 .theme-light .bg-\[\#070D18\],
+[data-theme="light"] .bg-\[\#0B1523\],
 .theme-light .bg-\[\#0B1523\],
+[data-theme="light"] .bg-\[\#0B1523\]\/90,
 .theme-light .bg-\[\#0B1523\]\/90 {
-  background-color: rgba(255, 255, 255, 0.96) !important;
-}
-
-/* Cartes, panneaux et encadrés */
-[data-theme="light"] .bg-slate-900,
-[data-theme="light"] .bg-slate-900\/90,
-[data-theme="light"] .bg-slate-900\/80,
-.theme-light .bg-slate-900,
-.theme-light .bg-slate-900\/90,
-.theme-light .bg-slate-900\/80 {
   background-color: #FFFFFF !important;
-  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -2px rgba(15, 23, 42, 0.03) !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 4px 0 rgba(15, 23, 42, 0.06) !important;
 }
 
-[data-theme="light"] .bg-slate-950,
-[data-theme="light"] .bg-slate-950\/60,
-[data-theme="light"] .bg-slate-950\/80,
-[data-theme="light"] .bg-slate-950\/90,
-.theme-light .bg-slate-950,
-.theme-light .bg-slate-950\/60,
-.theme-light .bg-slate-950\/80,
-.theme-light .bg-slate-950\/90 {
+/* Conteneur de commutation d'écrans dans la navbar */
+[data-theme="light"] nav .bg-slate-900\/90,
+.theme-light nav .bg-slate-900\/90 {
   background-color: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
 }
 
-[data-theme="light"] .bg-slate-800,
-.theme-light .bg-slate-800 {
+/* Boutons inactifs de la navbar : Texte bien lisible et sombre */
+[data-theme="light"] nav button:not(.bg-emerald-400),
+.theme-light nav button:not(.bg-emerald-400) {
+  color: #1E293B !important;
+}
+[data-theme="light"] nav button:not(.bg-emerald-400):hover,
+.theme-light nav button:not(.bg-emerald-400):hover {
   background-color: #E2E8F0 !important;
+  color: #0A0F1D !important;
 }
 
-[data-theme="light"] .hover\:bg-slate-800:hover,
-.theme-light .hover\:bg-slate-800:hover {
-  background-color: #E2E8F0 !important;
+/* --- 2. Cartes & Conteneurs (Remplacement systématique du gris foncé par du Blanc Pur) --- */
+/* Toutes les variantes de bg-slate-900 (cartes principales, volets, encarts) */
+[data-theme="light"] [class*="bg-slate-900"],
+.theme-light [class*="bg-slate-900"] {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+  box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 4px 12px -2px rgba(15, 23, 42, 0.04) !important;
 }
 
-[data-theme="light"] .hover\:bg-slate-700:hover,
-.theme-light .hover\:bg-slate-700:hover {
-  background-color: #CBD5E1 !important;
-}
-
-/* Bordures & Séparateurs */
-[data-theme="light"] .border-slate-800,
-[data-theme="light"] .border-slate-800\/80,
-[data-theme="light"] .border-slate-700,
-[data-theme="light"] .border-slate-700\/60,
-[data-theme="light"] .border-slate-700\/80,
-.theme-light .border-slate-800,
-.theme-light .border-slate-800\/80,
-.theme-light .border-slate-700,
-.theme-light .border-slate-700\/60,
-.theme-light .border-slate-700\/80 {
+/* Toutes les variantes de bg-slate-950 (sous-panneaux, fonds d'entrées, cartes secondaires) */
+[data-theme="light"] [class*="bg-slate-950"]:not(pre):not(code):not([data-testid="remediation-code-block"]),
+.theme-light [class*="bg-slate-950"]:not(pre):not(code):not([data-testid="remediation-code-block"]) {
+  background-color: #F8FAFC !important;
   border-color: #E2E8F0 !important;
 }
 
-/* Couleurs de texte pour haute lisibilité WCAG AA / AAA */
-[data-theme="light"] .text-white,
+/* Toutes les variantes de bg-slate-800 et bg-slate-700 (anciennes zones grises foncées) */
+/* Deviennent un blanc doux ou gris très clair lumineux (#F8FAFC / #F1F5F9) avec bordure nette */
+[data-theme="light"] [class*="bg-slate-800"]:not(pre):not(code):not([data-testid="remediation-code-block"]),
+[data-theme="light"] [class*="bg-slate-700"]:not(pre):not(code):not([data-testid="remediation-code-block"]),
+.theme-light [class*="bg-slate-800"]:not(pre):not(code):not([data-testid="remediation-code-block"]),
+.theme-light [class*="bg-slate-700"]:not(pre):not(code):not([data-testid="remediation-code-block"]) {
+  background-color: #F8FAFC !important;
+  border-color: #CBD5E1 !important;
+}
+
+/* Survol des cartes et boutons secondaires */
+[data-theme="light"] .hover\:bg-slate-800:hover,
+[data-theme="light"] .hover\:bg-slate-700:hover,
+[data-theme="light"] [class*="hover:bg-slate-800"]:hover,
+[data-theme="light"] [class*="hover:bg-slate-700"]:hover,
+.theme-light .hover\:bg-slate-800:hover,
+.theme-light .hover\:bg-slate-700:hover,
+.theme-light [class*="hover:bg-slate-800"]:hover,
+.theme-light [class*="hover:bg-slate-700"]:hover {
+  background-color: #E2E8F0 !important;
+}
+
+/* --- 3. Bordures et Séparateurs (Disparition des bordures grises foncées) --- */
+[data-theme="light"] [class*="border-slate-800"],
+[data-theme="light"] [class*="border-slate-700"],
+.theme-light [class*="border-slate-800"],
+.theme-light [class*="border-slate-700"] {
+  border-color: #E2E8F0 !important;
+}
+
+/* --- 4. Typographie & Contrastes Élevés (Remplacement du gris pâle/terne par du noir encre franc) --- */
+/* Titres et textes primaires */
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+.theme-light h1,
+.theme-light h2,
+.theme-light h3,
+.theme-light h4 {
+  color: #0A0F1D !important;
+  font-weight: 800;
+}
+
+/* Textes de corps, étiquettes et descriptions (fini le gris illisible) */
+[data-theme="light"] p,
 [data-theme="light"] .text-slate-100,
-.theme-light .text-white,
-.theme-light .text-slate-100 {
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300,
+.theme-light p,
+.theme-light .text-slate-100,
+.theme-light .text-slate-200,
+.theme-light .text-slate-300 {
   color: #0F172A !important;
 }
 
-[data-theme="light"] .text-slate-200,
-.theme-light .text-slate-200 {
-  color: #1E293B !important;
-}
-
-[data-theme="light"] .text-slate-300,
-.theme-light .text-slate-300 {
-  color: #334155 !important;
-}
-
+/* Remplacement du text-slate-400 et text-slate-500 par un gris ardoise soutenu et lisible (Slate-700 #334155) */
 [data-theme="light"] .text-slate-400,
-.theme-light .text-slate-400 {
-  color: #475569 !important;
-}
-
 [data-theme="light"] .text-slate-500,
+.theme-light .text-slate-400,
 .theme-light .text-slate-500 {
-  color: #64748B !important;
+  color: #334155 !important;
+  font-weight: 500;
 }
 
-/* Accentuation des couleurs d'alerte et de validation pour fond clair */
+/* Textes blancs hors boutons d'action sombres */
+[data-theme="light"] span.text-white:not([class*="bg-"]):not([class*="badge"]),
+[data-theme="light"] div.text-white:not([class*="bg-"]),
+.theme-light span.text-white:not([class*="bg-"]):not([class*="badge"]),
+.theme-light div.text-white:not([class*="bg-"]) {
+  color: #0A0F1D !important;
+}
+
+/* --- 5. Boutons d'Action & Contrôles Interactifs --- */
+/* Boutons utilitaires (ex: Télécharger PDF, Copier lien, Presets, Filtres) */
+[data-theme="light"] button.bg-slate-800,
+[data-theme="light"] button.bg-slate-900,
+[data-theme="light"] a.bg-slate-800,
+.theme-light button.bg-slate-800,
+.theme-light button.bg-slate-900,
+.theme-light a.bg-slate-800 {
+  background-color: #FFFFFF !important;
+  color: #0A0F1D !important;
+  border: 1.5px solid #CBD5E1 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+[data-theme="light"] button.bg-slate-800:hover,
+[data-theme="light"] button.bg-slate-900:hover,
+.theme-light button.bg-slate-800:hover,
+.theme-light button.bg-slate-900:hover {
+  background-color: #F1F5F9 !important;
+  border-color: #94A3B8 !important;
+  color: #000000 !important;
+}
+
+/* Boutons de réseaux sociaux conservent leur fond officiel */
+[data-theme="light"] a[data-testid="share-twitter"],
+.theme-light a[data-testid="share-twitter"] {
+  background-color: #0A0F1D !important;
+  color: #FFFFFF !important;
+  border-color: #0A0F1D !important;
+}
+[data-theme="light"] a[data-testid="share-linkedin"],
+.theme-light a[data-testid="share-linkedin"] {
+  background-color: #0077b5 !important;
+  color: #FFFFFF !important;
+  border-color: #0077b5 !important;
+}
+[data-theme="light"] a[data-testid="share-facebook"],
+.theme-light a[data-testid="share-facebook"] {
+  background-color: #1877f2 !important;
+  color: #FFFFFF !important;
+  border-color: #1877f2 !important;
+}
+
+[data-theme="light"] a[data-testid="share-twitter"] svg,
+.theme-light a[data-testid="share-twitter"] svg,
+[data-theme="light"] a[data-testid="share-linkedin"] svg,
+.theme-light a[data-testid="share-linkedin"] svg,
+[data-theme="light"] a[data-testid="share-facebook"] svg,
+.theme-light a[data-testid="share-facebook"] svg {
+  fill: #FFFFFF !important;
+}
+
+/* Boutons verts émeraude : Clairs, percutants et bien contrastés */
+[data-theme="light"] .bg-emerald-400,
+.theme-light .bg-emerald-400,
+[data-theme="light"] .bg-emerald-500,
+.theme-light .bg-emerald-500 {
+  background-color: #059669 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 2px 6px -1px rgba(5, 150, 105, 0.4) !important;
+}
+
+/* --- 6. Blocs de Code & Terminaux (Préservation du style IDE sombre de qualité) --- */
+[data-theme="light"] pre,
+[data-theme="light"] code,
+[data-theme="light"] [data-testid="remediation-code-block"],
+.theme-light pre,
+.theme-light code,
+.theme-light [data-testid="remediation-code-block"] {
+  background-color: #0F172A !important;
+  color: #34D399 !important;
+  border-color: #1E293B !important;
+}
+
+[data-theme="light"] pre span,
+.theme-light pre span {
+  color: inherit !important;
+}
+
+/* Conteneur d'aperçu du badge SVG dans le configurateur */
+[data-theme="light"] [data-testid="dynamic-badge-preview-container"],
+.theme-light [data-testid="dynamic-badge-preview-container"] {
+  background-color: #0F1B2D !important;
+  border: 1px solid #1E293B !important;
+}
+
+/* --- 7. Badges Sémantiques Lumineux (Remplacement des fonds gris par des teintes nettes) --- */
+/* Émeraude (Note A, Validé, Sécurisé) */
 [data-theme="light"] .text-emerald-400,
-.theme-light .text-emerald-400 {
+[data-theme="light"] .text-emerald-300,
+.theme-light .text-emerald-400,
+.theme-light .text-emerald-300 {
   color: #047857 !important;
+  font-weight: 700;
 }
 
-[data-theme="light"] .text-amber-400,
-.theme-light .text-amber-400 {
-  color: #B45309 !important;
-}
-
-[data-theme="light"] .text-rose-400,
-.theme-light .text-rose-400 {
-  color: #BE123C !important;
-}
-
+[data-theme="light"] .bg-emerald-500\/10,
+[data-theme="light"] .bg-emerald-500\/15,
+[data-theme="light"] .bg-emerald-500\/20,
+[data-theme="light"] .bg-emerald-950\/20,
 [data-theme="light"] .bg-emerald-950\/40,
 [data-theme="light"] .bg-emerald-950\/60,
+.theme-light .bg-emerald-500\/10,
+.theme-light .bg-emerald-500\/15,
+.theme-light .bg-emerald-500\/20,
+.theme-light .bg-emerald-950\/20,
 .theme-light .bg-emerald-950\/40,
 .theme-light .bg-emerald-950\/60 {
   background-color: #ECFDF5 !important;
   border-color: #A7F3D0 !important;
+  color: #047857 !important;
 }
 
+/* Ambre (Note C, Attention, Avertissement) */
+[data-theme="light"] .text-amber-400,
+[data-theme="light"] .text-amber-300,
+.theme-light .text-amber-400,
+.theme-light .text-amber-300 {
+  color: #B45309 !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .bg-amber-500\/10,
+[data-theme="light"] .bg-amber-500\/15,
+[data-theme="light"] .bg-amber-500\/20,
+[data-theme="light"] .bg-amber-950\/20,
 [data-theme="light"] .bg-amber-950\/40,
 [data-theme="light"] .bg-amber-950\/60,
+.theme-light .bg-amber-500\/10,
+.theme-light .bg-amber-500\/15,
+.theme-light .bg-amber-500\/20,
+.theme-light .bg-amber-950\/20,
 .theme-light .bg-amber-950\/40,
 .theme-light .bg-amber-950\/60 {
   background-color: #FFFBEB !important;
   border-color: #FDE68A !important;
+  color: #B45309 !important;
 }
 
+/* Rouge / Rose (Note E/F, Risque Critique, Coupure) */
+[data-theme="light"] .text-rose-400,
+[data-theme="light"] .text-rose-300,
+.theme-light .text-rose-400,
+.theme-light .text-rose-300 {
+  color: #B91C1C !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .bg-rose-500\/10,
+[data-theme="light"] .bg-rose-500\/15,
+[data-theme="light"] .bg-rose-500\/20,
+[data-theme="light"] .bg-rose-950\/20,
 [data-theme="light"] .bg-rose-950\/40,
 [data-theme="light"] .bg-rose-950\/60,
+.theme-light .bg-rose-500\/10,
+.theme-light .bg-rose-500\/15,
+.theme-light .bg-rose-500\/20,
+.theme-light .bg-rose-950\/20,
 .theme-light .bg-rose-950\/40,
 .theme-light .bg-rose-950\/60 {
-  background-color: #FFF1F2 !important;
-  border-color: #FECDD3 !important;
+  background-color: #FEF2F2 !important;
+  border-color: #FECACA !important;
+  color: #B91C1C !important;
 }
 
-/* Champs de formulaires */
-[data-theme="light"] input,
+/* Bleu / Ciel (Informations, Agences, Multi-Sites) */
+[data-theme="light"] .text-sky-400,
+[data-theme="light"] .text-sky-300,
+.theme-light .text-sky-400,
+.theme-light .text-sky-300 {
+  color: #0369A1 !important;
+  font-weight: 700;
+}
+
+[data-theme="light"] .bg-sky-500\/10,
+[data-theme="light"] .bg-sky-500\/20,
+[data-theme="light"] .bg-sky-950\/40,
+.theme-light .bg-sky-500\/10,
+.theme-light .bg-sky-500\/20,
+.theme-light .bg-sky-950\/40 {
+  background-color: #F0F9FF !important;
+  border-color: #BAE6FD !important;
+  color: #0369A1 !important;
+}
+
+/* Badges neutres anciennement en gris sombre bg-slate-800 */
+[data-theme="light"] span.bg-slate-800,
+[data-theme="light"] div.bg-slate-800:not(button),
+.theme-light span.bg-slate-800,
+.theme-light div.bg-slate-800:not(button) {
+  background-color: #F1F5F9 !important;
+  border-color: #CBD5E1 !important;
+  color: #0F172A !important;
+}
+
+/* --- 8. Formulaires, Inputs et Sélecteurs --- */
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="email"],
+[data-theme="light"] input[type="url"],
 [data-theme="light"] select,
 [data-theme="light"] textarea,
-.theme-light input,
+.theme-light input[type="text"],
+.theme-light input[type="email"],
+.theme-light input[type="url"],
 .theme-light select,
 .theme-light textarea {
   background-color: #FFFFFF !important;
-  color: #0F172A !important;
-  border-color: #CBD5E1 !important;
+  color: #0A0F1D !important;
+  border: 1.5px solid #CBD5E1 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] select:focus,
+[data-theme="light"] textarea:focus,
+.theme-light input:focus,
+.theme-light select:focus,
+.theme-light textarea:focus {
+  border-color: #059669 !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
 }
 
 [data-theme="light"] input::placeholder,
 .theme-light input::placeholder {
-  color: #94A3B8 !important;
+  color: #64748B !important;
 }
 
-/* Infobulles et Tooltips en mode clair */
+/* Curseur range (slider avant/après & simulateur de CA) */
+[data-theme="light"] input[type="range"],
+.theme-light input[type="range"] {
+  background-color: #E2E8F0 !important;
+}
+
+/* --- 9. Gradients & Sections Spéciales --- */
+[data-theme="light"] [data-testid="pricing-conversion-section"],
+.theme-light [data-testid="pricing-conversion-section"] {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F8FAFC 50%, #F1F5F9 100%) !important;
+  border-color: #A7F3D0 !important;
+}
+
+[data-theme="light"] [data-testid="fleet-manager-section"] > div:first-child,
+.theme-light [data-testid="fleet-manager-section"] > div:first-child {
+  background: linear-gradient(135deg, #FFFFFF 0%, #F0F9FF 100%) !important;
+  border-color: #BAE6FD !important;
+}
+
+/* --- 10. Tableaux de Données (Logs, CRM, Flotte, Grille 10 Critères) --- */
+[data-theme="light"] table,
+.theme-light table {
+  background-color: #FFFFFF !important;
+  border-color: #E2E8F0 !important;
+}
+
+[data-theme="light"] th,
+.theme-light th {
+  background-color: #F8FAFC !important;
+  color: #1E293B !important;
+  font-weight: 700 !important;
+  border-color: #E2E8F0 !important;
+}
+
+[data-theme="light"] td,
+.theme-light td {
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+}
+
+[data-theme="light"] tr:hover td,
+.theme-light tr:hover td {
+  background-color: #F8FAFC !important;
+}
+
+/* --- 11. Modales & Tiroirs d'Action --- */
+[data-theme="light"] [role="dialog"],
+[data-theme="light"] [data-testid="remediation-modal-overlay"] > div,
+[data-theme="light"] [data-testid="nis2-modal-overlay"] > div,
+[data-theme="light"] [data-testid="order-modal-overlay"] > div,
+[data-theme="light"] [data-testid="qr-share-modal-overlay"] > div,
+.theme-light [role="dialog"],
+.theme-light [data-testid="remediation-modal-overlay"] > div,
+.theme-light [data-testid="nis2-modal-overlay"] > div,
+.theme-light [data-testid="order-modal-overlay"] > div,
+.theme-light [data-testid="qr-share-modal-overlay"] > div {
+  background-color: #FFFFFF !important;
+  border-color: #CBD5E1 !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25) !important;
+}
+
+/* Backdrop flou en mode clair */
+[data-theme="light"] [data-testid$="-modal-overlay"],
+.theme-light [data-testid$="-modal-overlay"] {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
+/* --- 12. Infobulles Tooltips & Graphiques Recharts --- */
 [data-theme="light"] [role="tooltip"],
 .theme-light [role="tooltip"] {
   background-color: #FFFFFF !important;
-  color: #0F172A !important;
-  border-color: #CBD5E1 !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1) !important;
+  color: #0A0F1D !important;
+  border: 1px solid #CBD5E1 !important;
+  box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.08) !important;
 }
 
-/* Graphique Recharts en mode clair */
 [data-theme="light"] .recharts-cartesian-grid line,
-.theme-light .recharts-cartesian-grid line {
-  stroke: #E2E8F0 !important;
+[data-theme="light"] .recharts-polar-grid-concentric path,
+[data-theme="light"] .recharts-polar-grid-angle line,
+.theme-light .recharts-cartesian-grid line,
+.theme-light .recharts-polar-grid-concentric path,
+.theme-light .recharts-polar-grid-angle line {
+  stroke: #CBD5E1 !important;
 }
 
 [data-theme="light"] .recharts-text,
 .theme-light .recharts-text {
-  fill: #475569 !important;
+  fill: #1E293B !important;
+  font-weight: 600 !important;
 }
 
-/* Cadre simulateur mobile */
+/* --- 13. Simulateur d'écran Mobile (390px) --- */
 [data-theme="light"] .mobile-device-frame,
 .theme-light .mobile-device-frame {
+  border-color: #94A3B8 !important;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.15) !important;
+}
+
+[data-theme="light"] .mobile-device-frame > div:first-child,
+.theme-light .mobile-device-frame > div:first-child {
+  background-color: #F1F5F9 !important;
+  color: #334155 !important;
   border-color: #CBD5E1 !important;
-  background-color: #F8FAFC !important;
 }

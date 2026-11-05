@@ -1,8 +1,8 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * BoutiqueSûre - Score de sécurité WooCommerce
- * ÉTAPE 2 : Suite complète de Maquettes HTML / Tailwind (Desktop & Mobile)
+ * BoutiqueSûre - Score de sécurité Boutique en Ligne
+ * Application principale avec navigation complète des 5 écrans + Charte RGPD & Mini Back-Office
  */
 
 import React, { useState, useEffect } from 'react';
@@ -21,6 +21,9 @@ import {
 import { 
   AuditLogs 
 } from './components/AuditLogs.tsx';
+import { 
+  PolitiqueConfidentialite 
+} from './components/PolitiqueConfidentialite.tsx';
 import { AuditResult } from './types.ts';
 import { 
   FileText, 
@@ -30,21 +33,54 @@ import {
   Smartphone, 
   Monitor, 
   ShieldCheck, 
-  BookOpen,
-  ArrowRight,
-  Layers,
   Database,
   Sun,
-  Moon
+  Moon,
+  Layers
 } from 'lucide-react';
 
-type MockupScreen = 'home' | 'waiting' | 'bulletin' | 'email' | 'audit_logs';
+export type MockupScreen = 'home' | 'waiting' | 'bulletin' | 'email' | 'audit_logs' | 'privacy';
 
 export default function App() {
   const [activeScreen, setActiveScreen] = useState<MockupScreen>('home');
   const [isMobileMode, setIsMobileMode] = useState<boolean>(false);
   const [currentAuditResult, setCurrentAuditResult] = useState<AuditResult | undefined>(undefined);
   
+  // Données de la boutique courante analysée (initialisées vides sans données fictives)
+  const [currentUrl, setCurrentUrl] = useState('');
+  const [currentEmail, setCurrentEmail] = useState('');
+
+  // Deep linking via URL query parameters (?screen=..., ?audit=..., ?domain=...)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const screenParam = params.get('screen');
+        if (
+          screenParam === 'privacy' || 
+          screenParam === 'home' || 
+          screenParam === 'waiting' || 
+          screenParam === 'bulletin' || 
+          screenParam === 'email' || 
+          screenParam === 'audit_logs'
+        ) {
+          setActiveScreen(screenParam as MockupScreen);
+        }
+
+        const auditParam = params.get('audit') || params.get('url') || params.get('domain');
+        if (auditParam) {
+          const cleanUrl = auditParam.startsWith('http') ? auditParam : `https://${auditParam}`;
+          setCurrentUrl(cleanUrl);
+          if (!screenParam) {
+            setActiveScreen('bulletin');
+          }
+        }
+      } catch {
+        // ignore url parsing issues
+      }
+    }
+  }, []);
+
   // Gestion du thème Sombre / Clair (haute accessibilité)
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined') {
@@ -77,10 +113,6 @@ export default function App() {
   const toggleTheme = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
-  
-  // Données de simulation
-  const [currentUrl, setCurrentUrl] = useState('https://maboutique-mode.fr');
-  const [currentEmail, setCurrentEmail] = useState('contact@maboutique-mode.fr');
 
   const handleStartAudit = (url: string, email: string) => {
     setCurrentUrl(url);
@@ -92,6 +124,12 @@ export default function App() {
     if (result) {
       setCurrentAuditResult(result);
     }
+    setActiveScreen('bulletin');
+  };
+
+  const handleSelectAuditFromBackoffice = (url: string, email: string) => {
+    setCurrentUrl(url);
+    setCurrentEmail(email);
     setActiveScreen('bulletin');
   };
 
@@ -117,13 +155,13 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <span className="font-extrabold text-sm text-white">BoutiqueSûre</span>
                 <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
-                  Étape 4 : Moteur d'analyse passive
+                  Étape 7 : Mini Back-Office & Leads CRM
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Commutateur d'écrans maquettés */}
+          {/* Commutateur d'écrans maquettés (6 écrans au total) */}
           <div className="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-semibold overflow-x-auto max-w-full">
             <button
               onClick={() => setActiveScreen('home')}
@@ -182,7 +220,20 @@ export default function App() {
               }`}
             >
               <Database className="w-3.5 h-3.5" />
-              <span>5. Journal des analyses</span>
+              <span>5. Journal des analyses & Leads</span>
+            </button>
+
+            <button
+              onClick={() => setActiveScreen('privacy')}
+              data-testid="nav-privacy-btn"
+              className={`min-h-[36px] px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                activeScreen === 'privacy'
+                  ? 'bg-emerald-400 text-slate-950 font-extrabold shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>6. Charte & RGPD</span>
             </button>
           </div>
 
@@ -256,13 +307,14 @@ export default function App() {
               <HomeMockup 
                 onStartAudit={handleStartAudit} 
                 isMobileView={true} 
+                onNavigateToScreen={setActiveScreen}
               />
             )}
             
             {activeScreen === 'waiting' && (
               <WaitingMockup 
-                storeUrl={currentUrl} 
-                email={currentEmail} 
+                storeUrl={currentUrl || 'https://votre-boutique.fr'} 
+                email={currentEmail || 'contact@votre-boutique.fr'} 
                 onFinish={handleFinishWaiting}
                 isMobileView={true} 
               />
@@ -270,39 +322,56 @@ export default function App() {
             
             {activeScreen === 'bulletin' && (
               <BulletinMockup 
-                storeUrl={currentUrl} 
-                email={currentEmail} 
+                storeUrl={currentUrl || 'https://votre-boutique.fr'} 
+                email={currentEmail || 'contact@votre-boutique.fr'} 
                 auditResult={currentAuditResult}
                 isMobileView={true} 
+                onNavigateToScreen={setActiveScreen}
               />
             )}
             
             {activeScreen === 'email' && (
               <EmailMockup 
-                storeUrl={currentUrl} 
-                email={currentEmail} 
+                storeUrl={currentUrl || 'https://votre-boutique.fr'} 
+                email={currentEmail || 'contact@votre-boutique.fr'} 
+                grade={currentAuditResult?.grade}
+                score={currentAuditResult?.score}
+                auditResult={currentAuditResult}
+                onNavigateToScreen={setActiveScreen}
               />
             )}
 
             {activeScreen === 'audit_logs' && (
-              <AuditLogs isMobileView={true} />
+              <AuditLogs 
+                isMobileView={true} 
+                onNavigateToScreen={setActiveScreen}
+                onSelectAuditUrl={handleSelectAuditFromBackoffice}
+              />
+            )}
+
+            {activeScreen === 'privacy' && (
+              <PolitiqueConfidentialite 
+                onBack={() => setActiveScreen('home')}
+                isMobileView={true}
+              />
             )}
           </div>
         )}
 
         {!isMobileMode && (
-          <>
+          <div key={activeScreen} className="animate-fade-slide-up w-full">
             {activeScreen === 'home' && (
               <HomeMockup 
                 onStartAudit={handleStartAudit} 
                 isMobileView={false} 
+                onNavigateToScreen={setActiveScreen}
               />
             )}
             
             {activeScreen === 'waiting' && (
               <WaitingMockup 
-                storeUrl={currentUrl} 
-                email={currentEmail} 
+                storeUrl={currentUrl || 'https://votre-boutique.fr'} 
+                email={currentEmail || 'contact@votre-boutique.fr'} 
                 onFinish={handleFinishWaiting}
                 isMobileView={false} 
               />
@@ -310,24 +379,40 @@ export default function App() {
             
             {activeScreen === 'bulletin' && (
               <BulletinMockup 
-                storeUrl={currentUrl} 
-                email={currentEmail} 
+                storeUrl={currentUrl || 'https://votre-boutique.fr'} 
+                email={currentEmail || 'contact@votre-boutique.fr'} 
                 auditResult={currentAuditResult}
                 isMobileView={false} 
+                onNavigateToScreen={setActiveScreen}
               />
             )}
             
             {activeScreen === 'email' && (
               <EmailMockup 
-                storeUrl={currentUrl} 
-                email={currentEmail} 
+                storeUrl={currentUrl || 'https://votre-boutique.fr'} 
+                email={currentEmail || 'contact@votre-boutique.fr'} 
+                grade={currentAuditResult?.grade}
+                score={currentAuditResult?.score}
+                auditResult={currentAuditResult}
+                onNavigateToScreen={setActiveScreen}
               />
             )}
 
             {activeScreen === 'audit_logs' && (
-              <AuditLogs isMobileView={false} />
+              <AuditLogs 
+                isMobileView={false} 
+                onNavigateToScreen={setActiveScreen}
+                onSelectAuditUrl={handleSelectAuditFromBackoffice}
+              />
             )}
-          </>
+
+            {activeScreen === 'privacy' && (
+              <PolitiqueConfidentialite 
+                onBack={() => setActiveScreen('home')}
+                isMobileView={false}
+              />
+            )}
+          </div>
         )}
 
       </div>

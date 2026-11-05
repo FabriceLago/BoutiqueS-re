@@ -13,7 +13,9 @@ import {
   supabaseAnonKey,
   recordScanLog,
   saveProspect,
-  fetchRecentScanLogs
+  fetchRecentScanLogs,
+  fetchProspects,
+  updateProspectStatus
 } from './supabase.ts';
 
 describe('Initialisation et utilitaires Supabase (src/lib/supabase.ts)', () => {
@@ -76,6 +78,19 @@ describe('Initialisation et utilitaires Supabase (src/lib/supabase.ts)', () => {
       expect(res.success).toBe(false);
       expect(res.data).toEqual([]);
       expect(res.error).toBe('Supabase non configuré.');
+    }
+  });
+
+  it('doit gérer gracieusement l\'absence de configuration pour fetchProspects et updateProspectStatus', async () => {
+    if (!getSupabaseClient()) {
+      const resFetch = await fetchProspects();
+      expect(resFetch.success).toBe(false);
+      expect(resFetch.data).toEqual([]);
+      expect(resFetch.error).toBe('Supabase non configuré.');
+
+      const resUpdate = await updateProspectStatus('lead_1', 'contacte', 'Test note');
+      expect(resUpdate.success).toBe(false);
+      expect(resUpdate.error).toContain('Supabase non configuré');
     }
   });
 

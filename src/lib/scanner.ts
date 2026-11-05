@@ -2132,6 +2132,51 @@ export interface SupabaseClientAdapter {
   };
 }
 
+/**
+ * Charte éthique et déontologique BoutiqueSûre (100% passive & conforme RGPD)
+ */
+export const RGPD_CHARTER_PRINCIPLES = {
+  singleGetRequest: true,
+  noPenetrationTesting: true,
+  noPortScan: true,
+  retentionDays: 30,
+  rateLimitMaxScans: 3,
+  rateLimitWindowHours: 24,
+  dpoEmail: 'dpo@boutiquesure.fr',
+  salt: 'boutiquesure_rgpd_salt_2026'
+};
+
+/**
+ * Hache une adresse IP en SHA-256 avec un sel statique pour respecter la vie privée (RGPD).
+ * Aucune adresse IP brute n'est stockée en clair dans Supabase ou en mémoire.
+ */
+export async function hashIpForPrivacy(ip: string): Promise<string> {
+  const normalized = (ip || '127.0.0.1').trim().toLowerCase();
+  const data = `${normalized}:${RGPD_CHARTER_PRINCIPLES.salt}`;
+  
+  if (typeof globalThis !== 'undefined' && globalThis.crypto?.subtle) {
+    const encoder = new TextEncoder();
+    const dataBuffer = encoder.encode(data);
+    const hashBuffer = await globalThis.crypto.subtle.digest('SHA-256', dataBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  
+  // Repli déterministe de 64 caractères
+  let h1 = 0xdeadbeef;
+  let h2 = 0x41c64e6d;
+  for (let i = 0; i < data.length; i++) {
+    const ch = data.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 2654435761);
+    h2 = Math.imul(h2 ^ ch, 1597334677);
+  }
+  h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+  h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+  const part1 = (h2 >>> 0).toString(16).padStart(8, '0');
+  const part2 = (h1 >>> 0).toString(16).padStart(8, '0');
+  return (part1 + part2).repeat(4).substring(0, 64);
+}
+
 // Tampon local en mémoire pour la résilience et le mode déconnecté / tests
 const localScanLogsBuffer: ScanAttemptLog[] = [];
 
