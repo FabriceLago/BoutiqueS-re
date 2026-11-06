@@ -71,9 +71,18 @@ export interface SanitizeUrlResult {
 // Nettoyage intelligent de l'URL pour ne cibler que la racine publique de la boutique
 export function sanitizeStoreUrl(raw: string): SanitizeUrlResult {
   if (!raw) return { cleanedUrl: '', wasModified: false };
-  // Nettoyage des espaces insécables, tabulations, caractères invisibles
-  let cleaned = raw.replace(/[\u200B-\u200D\uFEFF\u00A0]/g, '').trim();
+  // Nettoyage des espaces insécables, tabulations, sauts de ligne, caractères invisibles
+  let cleaned = raw.replace(/[\u200B-\u200D\uFEFF\u00A0\r\n\t]/g, '').trim();
   if (!cleaned) return { cleanedUrl: '', wasModified: false };
+
+  // Rejet immédiat des schémas malveillants (pseudo-protocoles XSS)
+  if (/^(javascript|data|vbscript|file|blob):/i.test(cleaned)) {
+    return {
+      cleanedUrl: '',
+      wasModified: true,
+      message: "Schéma non autorisé détecté. Veuillez entrer un nom de domaine ou une URL Web sécurisée (HTTPS)."
+    };
+  }
 
   let wasModified = false;
   let reason = '';
@@ -82,6 +91,15 @@ export function sanitizeStoreUrl(raw: string): SanitizeUrlResult {
     const hasProtocol = cleaned.startsWith('http://') || cleaned.startsWith('https://');
     const toParse = hasProtocol ? cleaned : `https://${cleaned}`;
     const parsed = new URL(toParse);
+
+    // Enforce strictly http or https
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return {
+        cleanedUrl: '',
+        wasModified: true,
+        message: "Seuls les protocoles http:// et https:// sont acceptés."
+      };
+    }
 
     // Si l'utilisateur colle une page interne (/wp-admin, /cart, /panier, /checkout) ou des paramètres de tracking
     if (parsed.pathname !== '/' && parsed.pathname !== '') {

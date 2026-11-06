@@ -40,11 +40,28 @@ export function getResendApiKey(): string {
 }
 
 /**
+ * Neutralise les caractères réservés HTML pour contrer les injections HTML dans les courriels
+ */
+function escapeHtml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Génère le gabarit HTML épuré et compatible tous clients mails pour le bulletin
  */
 export function buildAuditEmailHtml(payload: SendAuditEmailPayload): string {
-  const domain = payload.storeUrl.replace(/^https?:\/\//i, '').split('/')[0];
+  const rawDomain = payload.storeUrl.replace(/^https?:\/\//i, '').split('/')[0];
+  const domain = escapeHtml(rawDomain);
+  const safeGrade = escapeHtml(String(payload.grade || 'A').toUpperCase().slice(0, 2));
+  const safeScore = Math.max(0, Math.min(100, Math.round(payload.score || 0)));
   const gradeConfig = getGradeDisplayConfig(payload.grade);
+  const safeGradeLabel = escapeHtml(gradeConfig.label);
   const dateStr = new Date().toLocaleDateString('fr-FR', {
     day: 'numeric',
     month: 'long',
@@ -59,8 +76,8 @@ export function buildAuditEmailHtml(payload: SendAuditEmailPayload): string {
 
   const prioritiesHtml = topPriorities.map((item, idx) => `
     <div style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
-      <div style="font-weight: 700; color: #0F172A; font-size: 13px;">${idx + 1}. ${item.title}</div>
-      <div style="color: #64748B; font-size: 12px; margin-top: 4px;">${item.description}</div>
+      <div style="font-weight: 700; color: #0F172A; font-size: 13px;">${idx + 1}. ${escapeHtml(item.title)}</div>
+      <div style="color: #64748B; font-size: 12px; margin-top: 4px;">${escapeHtml(item.description)}</div>
     </div>
   `).join('');
 
@@ -88,12 +105,12 @@ export function buildAuditEmailHtml(payload: SendAuditEmailPayload): string {
 
       <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 20px; display: flex; align-items: center; margin-bottom: 24px;">
         <div style="display: inline-block; width: 64px; height: 64px; line-height: 64px; text-align: center; background-color: #0F1B2D; color: #4ADE80; font-size: 32px; font-weight: 900; border-radius: 12px; margin-right: 20px;">
-          ${payload.grade}
+          ${safeGrade}
         </div>
         <div>
           <div style="font-size: 11px; text-transform: uppercase; font-weight: 700; color: #64748B;">Score officiel</div>
-          <div style="font-size: 16px; font-weight: 800; color: #0F172A;">${payload.score} / 100 points</div>
-          <div style="font-size: 12px; color: #475569; margin-top: 2px;">${gradeConfig.label}</div>
+          <div style="font-size: 16px; font-weight: 800; color: #0F172A;">${safeScore} / 100 points</div>
+          <div style="font-size: 12px; color: #475569; margin-top: 2px;">${safeGradeLabel}</div>
         </div>
       </div>
 

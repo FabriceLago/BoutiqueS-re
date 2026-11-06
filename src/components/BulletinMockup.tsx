@@ -38,7 +38,9 @@ import {
   Compass,
   Terminal,
   QrCode,
-  FileCheck2
+  FileCheck2,
+  Smartphone,
+  Activity
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -67,6 +69,16 @@ import { RoiConversionCalculator } from './RoiConversionCalculator.tsx';
 import { BankInsuranceAttestationModal } from './BankInsuranceAttestationModal.tsx';
 import { DataBreachScanner } from './DataBreachScanner.tsx';
 import { WebhookAlertsConfig } from './WebhookAlertsConfig.tsx';
+import { CyberAttackSandbox } from './CyberAttackSandbox.tsx';
+import { SecurityTxtLegalGeneratorModal } from './SecurityTxtLegalGeneratorModal.tsx';
+import { CheckoutTrustBooster } from './CheckoutTrustBooster.tsx';
+import { CompetitorBenchmarkModal } from './CompetitorBenchmarkModal.tsx';
+import { EmergencyPlanModal } from './EmergencyPlanModal.tsx';
+import { ThirdPartyScriptsInspector } from './ThirdPartyScriptsInspector.tsx';
+import { OfficialAuditCertificateModal } from './OfficialAuditCertificateModal.tsx';
+import { TrafficSpikeSimulator } from './TrafficSpikeSimulator.tsx';
+import { FloatingTrustBadgeWidgetModal } from './FloatingTrustBadgeWidgetModal.tsx';
+import { SmsWhatsappAlertModal } from './SmsWhatsappAlertModal.tsx';
 
 export interface BulletinMockupProps {
   storeUrl?: string;
@@ -430,6 +442,12 @@ export function BulletinMockup({
   const [isOrderModalOpen, setIsOrderModalOpen] = useState<boolean>(false);
   const [isQrModalOpen, setIsQrModalOpen] = useState<boolean>(false);
   const [isBankInsuranceModalOpen, setIsBankInsuranceModalOpen] = useState<boolean>(false);
+  const [isSecurityTxtModalOpen, setIsSecurityTxtModalOpen] = useState<boolean>(false);
+  const [isCompetitorBenchmarkModalOpen, setIsCompetitorBenchmarkModalOpen] = useState<boolean>(false);
+  const [isEmergencyPlanModalOpen, setIsEmergencyPlanModalOpen] = useState<boolean>(false);
+  const [isCertificateModalOpen, setIsCertificateModalOpen] = useState<boolean>(false);
+  const [isFloatingWidgetModalOpen, setIsFloatingWidgetModalOpen] = useState<boolean>(false);
+  const [isSmsModalOpen, setIsSmsModalOpen] = useState<boolean>(false);
   const [selectedOrderOffer, setSelectedOrderOffer] = useState<OfferType>('diagnostic_590');
   
   // États interactifs d'animation et de simulation d'impact
@@ -914,7 +932,8 @@ export function BulletinMockup({
   const calculated48hLoss = Math.round(calculatedDailyRevenue * 2 * calculatedRiskCoeff);
 
   // Snippet du badge officiel pour Note A
-  const badgeSnippet = `<a href="https://boutiquesure.fr/verification?domaine=${encodeURIComponent(storeUrl)}" target="_blank" rel="noopener" title="Boutique auditée passivement par BoutiqueSûre - Note A">
+  const safeBadgeDomain = storeUrl.replace(/^https?:\/\//i, '').split('/')[0].replace(/[^a-zA-Z0-9.-]/g, '');
+  const badgeSnippet = `<a href="https://boutiquesure.fr/verification?domaine=${encodeURIComponent(safeBadgeDomain)}" target="_blank" rel="noopener noreferrer" title="Boutique auditée passivement par BoutiqueSûre - Note A">
   <img src="https://boutiquesure.fr/badges/boutiquesure-note-a-2026.svg" alt="Garantie de Sécurité Passive BoutiqueSûre - Note A" width="160" height="48" />
 </a>`;
 
@@ -1204,13 +1223,61 @@ export function BulletinMockup({
                   type="button"
                   onClick={() => onNavigateToScreen('email')}
                   data-testid="preview-email-btn"
-                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-slate-200 border border-slate-800 text-xs font-semibold transition-all cursor-pointer"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all cursor-pointer"
                   title="Prévisualiser l'email Resend généré"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
                   <span>Aperçu email</span>
                 </button>
               )}
+
+              {/* Bouton security.txt RFC 9116 */}
+              <button
+                type="button"
+                onClick={() => setIsSecurityTxtModalOpen(true)}
+                data-testid="open-security-txt-btn"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all cursor-pointer"
+                title="Générer le fichier security.txt (RFC 9116) et mentions légales"
+              >
+                <FileCheck2 className="w-3.5 h-3.5 text-emerald-400" />
+                <span>security.txt</span>
+              </button>
+
+              {/* Bouton Plan d'Urgence / Black Friday */}
+              <button
+                type="button"
+                onClick={() => setIsEmergencyPlanModalOpen(true)}
+                data-testid="open-emergency-plan-btn"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all cursor-pointer"
+                title="Checklist Soldes/Black Friday et protocole de crise"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                <span>Plan d'Urgence</span>
+              </button>
+
+              {/* Bouton Certificat Officiel */}
+              <button
+                type="button"
+                onClick={() => setIsCertificateModalOpen(true)}
+                data-testid="open-certificate-modal-btn"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all cursor-pointer"
+                title="Générer le diplôme et certificat officiel format A4"
+              >
+                <Award className="w-3.5 h-3.5 text-amber-400" />
+                <span>Certificat A4</span>
+              </button>
+
+              {/* Bouton Alerte SMS/WhatsApp */}
+              <button
+                type="button"
+                onClick={() => setIsSmsModalOpen(true)}
+                data-testid="open-sms-alert-modal-btn"
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 text-xs font-semibold transition-all cursor-pointer"
+                title="Configurer les alertes SMS et WhatsApp"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Alertes SMS/WhatsApp</span>
+              </button>
 
               {/* Bouton Télécharger le PDF */}
               <button
@@ -1502,7 +1569,16 @@ export function BulletinMockup({
             </div>
             <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] text-slate-400 font-medium">
               <span>Échantillon : ~4 500 boutiques</span>
-              <span className="text-emerald-400 font-semibold">Analyse passive</span>
+              <button
+                type="button"
+                onClick={() => setIsCompetitorBenchmarkModalOpen(true)}
+                data-testid="open-competitor-benchmark-btn"
+                className="text-amber-400 hover:text-amber-300 font-semibold underline flex items-center gap-1 cursor-pointer transition-colors"
+                title="Comparer avec vos concurrents directs"
+              >
+                <span>Spy-Check Concurrents</span>
+                <ExternalLink className="w-3 h-3" />
+              </button>
             </div>
           </div>
 
@@ -1877,6 +1953,12 @@ export function BulletinMockup({
           grade={selectedGrade}
         />
 
+        {/* Simulateur de Résistance aux Pics de Ventes (Soldes & TTFB) */}
+        <TrafficSpikeSimulator
+          storeUrl={storeUrl}
+          grade={selectedGrade}
+        />
+
         {/* Idée 1 : Simulateur de ROI Financier & Récupération d'Abandons de Panier */}
         <RoiConversionCalculator
           currentGrade={effectiveGrade}
@@ -1884,9 +1966,27 @@ export function BulletinMockup({
           onOpenOrderModal={() => handleOpenOrderModal('diagnostic_590')}
         />
 
-        {/* Idée 3 : Détecteur Passif d'Exposition aux Fuites de Données & Dark Web */}
         <DataBreachScanner
           storeUrl={storeUrl}
+        />
+
+        {/* Simulateur Pédagogique de Cyber-Attaque (« Black Hat Sandbox ») */}
+        <CyberAttackSandbox
+          storeUrl={storeUrl}
+          currentGrade={effectiveGrade}
+        />
+
+        {/* Inspecteur de Balises & Scripts Tiers (« Supply-Chain Audit ») */}
+        <ThirdPartyScriptsInspector
+          storeUrl={storeUrl}
+          grade={selectedGrade}
+        />
+
+        {/* Audit « Checkout Trust Booster » : Réassurance & Conversion Panier */}
+        <CheckoutTrustBooster
+          storeUrl={storeUrl}
+          grade={selectedGrade}
+          score={current.score}
         />
 
         {/* Module Calculateur interactif de perte financière & CA à risque */}
@@ -2038,6 +2138,16 @@ export function BulletinMockup({
               </p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => setIsFloatingWidgetModalOpen(true)}
+                data-testid="open-floating-widget-modal-btn"
+                className="px-3 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5"
+                title="Générer le widget flottant discret pour votre site"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Widget Flottant 1-Clic</span>
+              </button>
               <span className={`text-[11px] px-3 py-1 rounded-full font-bold ${
                 selectedGrade === 'A' 
                   ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' 
@@ -2374,6 +2484,56 @@ export function BulletinMockup({
         email={email}
         grade={effectiveGrade}
         score={current.score}
+      />
+
+      {/* Modal security.txt RFC 9116 & Mentions Légales E-Commerce */}
+      <SecurityTxtLegalGeneratorModal
+        isOpen={isSecurityTxtModalOpen}
+        onClose={() => setIsSecurityTxtModalOpen(false)}
+        storeUrl={storeUrl}
+        email={email}
+      />
+
+      {/* Modal Comparateur Concurrentiel & Benchmark Sectoriel */}
+      <CompetitorBenchmarkModal
+        isOpen={isCompetitorBenchmarkModalOpen}
+        onClose={() => setIsCompetitorBenchmarkModalOpen(false)}
+        myStoreUrl={storeUrl}
+        myScore={current.score}
+        myGrade={effectiveGrade}
+      />
+
+      {/* Modal Plan de Continuité d'Urgence & Checklist Fort Knox */}
+      <EmergencyPlanModal
+        isOpen={isEmergencyPlanModalOpen}
+        onClose={() => setIsEmergencyPlanModalOpen(false)}
+        storeUrl={storeUrl}
+        email={email}
+      />
+
+      {/* Modal Certificat Officiel d'Audit A4 Paysage */}
+      <OfficialAuditCertificateModal
+        isOpen={isCertificateModalOpen}
+        onClose={() => setIsCertificateModalOpen(false)}
+        storeUrl={storeUrl}
+        grade={effectiveGrade}
+        score={current.score}
+      />
+
+      {/* Modal Widget Flottant Sceau de Sécurité */}
+      <FloatingTrustBadgeWidgetModal
+        isOpen={isFloatingWidgetModalOpen}
+        onClose={() => setIsFloatingWidgetModalOpen(false)}
+        storeUrl={storeUrl}
+        grade={effectiveGrade}
+        score={current.score}
+      />
+
+      {/* Modal Alertes d'Urgence SMS & WhatsApp */}
+      <SmsWhatsappAlertModal
+        isOpen={isSmsModalOpen}
+        onClose={() => setIsSmsModalOpen(false)}
+        storeUrl={storeUrl}
       />
     </div>
   );

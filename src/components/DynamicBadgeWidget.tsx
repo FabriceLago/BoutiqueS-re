@@ -25,6 +25,16 @@ export interface DynamicBadgeWidgetProps {
 export type BadgeTheme = 'dark' | 'light' | 'emerald';
 export type BadgeFormat = 'svg' | 'html';
 
+export function escapeXml(str: string): string {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function generateBadgeSvgCode(
   domain: string,
   grade: string,
@@ -33,13 +43,17 @@ export function generateBadgeSvgCode(
 ): string {
   const currentMonthYear = new Intl.DateTimeFormat('fr-FR', { month: 'long', year: 'numeric' }).format(new Date());
   
+  // Sanitisation stricte anti-XSS
+  const safeGrade = escapeXml((/^[A-F]$/i.test(grade) ? grade : 'A').toUpperCase());
+  const safeDomain = escapeXml(domain.replace(/[^a-zA-Z0-9.-]/g, '').slice(0, 80));
+
   const bgColor = theme === 'dark' ? '#0F1B2D' : theme === 'light' ? '#FFFFFF' : '#0B1523';
   const textColor = theme === 'light' ? '#0F172A' : '#FFFFFF';
   const subtextColor = theme === 'light' ? '#475569' : '#94A3B8';
   const borderColor = theme === 'emerald' ? '#4ADE80' : theme === 'light' ? '#E2E8F0' : '#1E293B';
-  const gradeColor = grade === 'A' ? '#4ADE80' : grade === 'B' ? '#2DD4BF' : '#FBBF24';
+  const gradeColor = safeGrade === 'A' ? '#4ADE80' : safeGrade === 'B' ? '#2DD4BF' : '#FBBF24';
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" width="280" height="64" role="img" aria-label="Boutique Protégée BoutiqueSûre - Note ${grade}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 280 64" width="280" height="64" role="img" aria-label="Boutique Protégée BoutiqueSûre - Note ${safeGrade}">
   <rect width="280" height="64" rx="12" fill="${bgColor}" stroke="${borderColor}" stroke-width="1.5"/>
   <circle cx="34" cy="32" r="18" fill="rgba(74,222,128,0.12)" stroke="${gradeColor}" stroke-width="1.5"/>
   <path d="M34 20 L44 24 V32 C44 38 34 43 34 43 C34 43 24 38 24 32 V24 Z" fill="none" stroke="${gradeColor}" stroke-width="1.8" stroke-linejoin="round"/>
@@ -47,7 +61,7 @@ export function generateBadgeSvgCode(
   <text x="62" y="27" fill="${textColor}" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="12">BOUTIQUE PROTÉGÉE</text>
   <text x="62" y="44" fill="${subtextColor}" font-family="system-ui,-apple-system,sans-serif" font-weight="500" font-size="10">Contrôle passif • ${currentMonthYear}</text>
   <rect x="220" y="16" width="46" height="32" rx="8" fill="rgba(74,222,128,0.15)" stroke="${gradeColor}" stroke-width="1"/>
-  <text x="243" y="37" fill="${gradeColor}" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="16" text-anchor="middle">NOTE ${grade}</text>
+  <text x="243" y="37" fill="${gradeColor}" font-family="system-ui,-apple-system,sans-serif" font-weight="900" font-size="16" text-anchor="middle">NOTE ${safeGrade}</text>
 </svg>`;
 }
 
@@ -60,7 +74,7 @@ export const DynamicBadgeWidget: React.FC<DynamicBadgeWidgetProps> = ({
   const [format, setFormat] = useState<BadgeFormat>('html');
   const [copied, setCopied] = useState<boolean>(false);
 
-  const cleanDomain = storeUrl.replace(/^https?:\/\//i, '').split('/')[0] || 'maboutique.fr';
+  const cleanDomain = storeUrl.replace(/^https?:\/\//i, '').split('/')[0].replace(/[^a-zA-Z0-9.-]/g, '') || 'maboutique.fr';
   const currentHost = typeof window !== 'undefined' ? window.location.origin : 'https://boutiquesure.fr';
   const auditLink = `${currentHost}/?audit=${encodeURIComponent(cleanDomain)}&screen=bulletin`;
 

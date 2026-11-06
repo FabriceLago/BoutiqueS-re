@@ -183,7 +183,8 @@ test.describe('Flux complet utilisateur BoutiqueSûre', () => {
     const faqSection = page.locator('[data-testid="faq-section"]');
     await expect(faqSection).toBeVisible();
     await expect(faqSection).toContainText('Tout comprendre sur la');
-    await expect(faqSection).toContainText('sécurité WooCommerce');
+    await expect(faqSection).toContainText(/sécurité (e-commerce|boutique en ligne|WooCommerce)/i);
+    await expect(faqSection.locator('[data-testid="faq-search-input"]')).toBeVisible();
     await expect(faqSection.locator('button:has-text("Lancer mon scan gratuit")')).toBeVisible();
   });
 
@@ -778,6 +779,120 @@ test.describe('Flux complet utilisateur BoutiqueSûre', () => {
     await expect(testAlertBtn).toBeVisible();
     await testAlertBtn.click();
     await expect(page.locator('text=Notification de test envoyée avec succès')).toBeVisible();
+  });
+
+  test('24. Nouvelles Fonctionnalités E-Commerce : Sandbox Cyber-Attaque, Trust Booster, Scripts Tiers et Modals', async ({ page }) => {
+    await page.goto('/');
+    const bulletinTab = page.locator('button:has-text("3. Bulletin de sécurité")');
+    await expect(bulletinTab).toBeVisible();
+    await bulletinTab.click();
+
+    // 1. Simulateur de Cyber-Attaque (Sandbox)
+    const attackSandbox = page.locator('[data-testid="cyber-attack-sandbox"]');
+    await expect(attackSandbox).toBeVisible();
+    await expect(attackSandbox).toContainText('Simulateur Pédagogique de Cyber-Attaque');
+
+    // Basculer sur le scénario Clickjacking
+    const clickjackingTab = page.locator('[data-testid="scenario-tab-clickjacking"]');
+    await expect(clickjackingTab).toBeVisible();
+    await clickjackingTab.click();
+
+    // Tester la bascule protection active
+    const toggleProtected = page.locator('[data-testid="toggle-protected"]');
+    await expect(toggleProtected).toBeVisible();
+    await toggleProtected.click();
+    await expect(page.locator('text=Protection BoutiqueSûre ACTIVE')).toBeVisible();
+
+    // 2. Inspecteur de Scripts Tiers
+    const scriptsInspector = page.locator('[data-testid="third-party-scripts-inspector"]');
+    await expect(scriptsInspector).toBeVisible();
+    await expect(scriptsInspector).toContainText('Inspecteur de Scripts & Balises Tierces');
+    await expect(scriptsInspector).toContainText('Google Tag Manager');
+
+    // 3. Checkout Trust Booster
+    const trustBooster = page.locator('[data-testid="checkout-trust-booster"]');
+    await expect(trustBooster).toBeVisible();
+    await expect(trustBooster).toContainText('Checkout Trust Booster');
+    await expect(trustBooster).toContainText('Trust Score Acheteur');
+
+    // 4. Modal security.txt (RFC 9116)
+    const openSecurityTxtBtn = page.locator('[data-testid="open-security-txt-btn"]');
+    await expect(openSecurityTxtBtn).toBeVisible();
+    await openSecurityTxtBtn.click();
+    const securityTxtModal = page.locator('[data-testid="security-txt-legal-modal"]');
+    await expect(securityTxtModal).toBeVisible();
+    await expect(securityTxtModal).toContainText('security.txt (RFC 9116)');
+    await page.locator('[data-testid="close-security-txt-modal-btn"]').click();
+    await expect(securityTxtModal).not.toBeVisible();
+
+    // 5. Modal Comparateur Concurrentiel (Spy-Check)
+    const openBenchmarkBtn = page.locator('[data-testid="open-competitor-benchmark-btn"]');
+    await expect(openBenchmarkBtn).toBeVisible();
+    await openBenchmarkBtn.click();
+    const benchmarkModal = page.locator('[data-testid="competitor-benchmark-modal"]');
+    await expect(benchmarkModal).toBeVisible();
+    await expect(benchmarkModal).toContainText('Comparateur Concurrentiel & Benchmark Sectoriel');
+    await page.locator('[data-testid="close-benchmark-modal-btn"]').click();
+    await expect(benchmarkModal).not.toBeVisible();
+
+    // 6. Modal Plan d'Urgence & Black Friday
+    const openEmergencyBtn = page.locator('[data-testid="open-emergency-plan-btn"]');
+    await expect(openEmergencyBtn).toBeVisible();
+    await openEmergencyBtn.click();
+    const emergencyModal = page.locator('[data-testid="emergency-plan-modal"]');
+    await expect(emergencyModal).toBeVisible();
+    await expect(emergencyModal).toContainText('Plan de Continuité d\'Urgence');
+    await page.locator('[data-testid="close-emergency-modal-btn"]').click();
+    await expect(emergencyModal).not.toBeVisible();
+  });
+
+  test('25. Certificat Officiel A4, Simulateur de Pics de Trafic, Widget Flottant & Alertes SMS/WhatsApp', async ({ page }) => {
+    await page.goto('/');
+    const bulletinTab = page.locator('button:has-text("3. Bulletin de sécurité")');
+    await expect(bulletinTab).toBeVisible();
+    await bulletinTab.click();
+
+    // 1. Simulateur de pics de trafic (TTFB & Soldes)
+    const trafficSimulator = page.locator('[data-testid="traffic-spike-simulator"]');
+    await expect(trafficSimulator).toBeVisible();
+    await expect(trafficSimulator).toContainText('Simulateur de Résistance aux Pics de Ventes');
+    await expect(trafficSimulator).toContainText('Temps de réponse (TTFB)');
+
+    // 2. Modal Certificat Officiel A4
+    const openCertBtn = page.locator('[data-testid="open-certificate-modal-btn"]');
+    await expect(openCertBtn).toBeVisible();
+    await openCertBtn.click();
+    const certModal = page.locator('[data-testid="official-certificate-modal"]');
+    await expect(certModal).toBeVisible();
+    await expect(certModal).toContainText('Certificat Officiel de Diligence');
+    await expect(certModal.locator('[data-testid="download-certificate-pdf-btn"]')).toBeVisible();
+    await page.locator('[data-testid="close-certificate-modal-btn"]').click();
+    await expect(certModal).not.toBeVisible();
+
+    // 3. Modal Widget Flottant Sceau de Sécurité
+    const openWidgetBtn = page.locator('[data-testid="open-floating-widget-modal-btn"]');
+    await expect(openWidgetBtn).toBeVisible();
+    await openWidgetBtn.click();
+    const widgetModal = page.locator('[data-testid="floating-badge-widget-modal"]');
+    await expect(widgetModal).toBeVisible();
+    await expect(widgetModal).toContainText('Widget Flottant « Sceau de Sécurité »');
+    await expect(widgetModal.locator('[data-testid="copy-floating-widget-snippet-btn"]')).toBeVisible();
+    await page.locator('[data-testid="close-floating-badge-modal-btn"]').click();
+    await expect(widgetModal).not.toBeVisible();
+
+    // 4. Modal Alertes SMS & WhatsApp
+    const openSmsBtn = page.locator('[data-testid="open-sms-alert-modal-btn"]');
+    await expect(openSmsBtn).toBeVisible();
+    await openSmsBtn.click();
+    const smsModal = page.locator('[data-testid="sms-whatsapp-alert-modal"]');
+    await expect(smsModal).toBeVisible();
+    await expect(smsModal).toContainText('Alertes Immédiates SMS & WhatsApp');
+    const sendTestSmsBtn = smsModal.locator('[data-testid="send-test-sms-btn"]');
+    await expect(sendTestSmsBtn).toBeVisible();
+    await sendTestSmsBtn.click();
+    await expect(smsModal.locator('text=Notification de test simulée avec succès')).toBeVisible({ timeout: 5000 });
+    await page.locator('[data-testid="close-sms-modal-btn"]').click();
+    await expect(smsModal).not.toBeVisible();
   });
 
 });
